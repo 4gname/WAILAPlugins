@@ -1,16 +1,24 @@
 buildscript {
     repositories {
         mavenCentral()
-        maven { url = "http://files.minecraftforge.net/maven" }
-        maven { url = "https://oss.sonatype.org/content/repositories/snapshots/" }
+		maven {
+			name = "MavenRepo"
+			url = "https://repo.maven.apache.org/maven2"
+		}
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
     }
-    dependencies { 
+    dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
-        classpath "de.undercouch:gradle-download-task:3.1.2"
     }
 }
 
-import de.undercouch.gradle.tasks.download.Download
 apply plugin: 'forge'
 apply plugin: 'maven-publish'
 apply plugin: 'curseforge'
@@ -30,6 +38,10 @@ minecraft {
 }
 
 repositories {
+	maven {
+        name 'Forge'
+        url 'http://files.minecraftforge.net/maven'
+    }
     maven { // ttCore
         name 'tterrag Repo'
         url "http://maven.tterrag.com/"
@@ -95,55 +107,8 @@ task deobfJar(type: Jar) {
     classifier = 'deobf'
 }
 
-import de.undercouch.gradle.tasks.download.Download
-
-task downloadZip(type: Download) {
-    src 'http://assets.tterrag.com/WAILAPlugins/libs.zip'
-    dest new File(buildDir, 'libs.zip')
-    onlyIfNewer true
-}
-
 task clearOld(type: Delete) {
     delete 'libs'
 }
 
-task downloadGregTech(type: Download) {
-    dest new File(buildDir, "gregtech-${gregtech_version}-dev.jar")
-
-    onlyIf {
-        !dest.exists()
-    }
-    src "http://jenkins.usrv.eu:8080/job/Gregtech-5-Unofficial/${gregtech_jenkinsbuild}/artifact/build/libs/gregtech-${gregtech_version}-dev.jar"
-    mustRunAfter "deobfBinJar"
-    mustRunAfter "repackMinecraft"
-}
-
-task downloadIC2(type: Download) {
-    dest new File(buildDir, "industrialcraft-${ic2_version}-dev.jar")
-
-    onlyIf {
-        !dest.exists()
-    }
-    src "http://jenkins.ic2.player.to/job/IC2_experimental/${ic2_jenkinsbuild}/artifact/build/libs/industrialcraft-${ic2_version}-dev.jar"
-    mustRunAfter "deobfBinJar"
-    mustRunAfter "repackMinecraft"
-}
-
-task downloadLibs(dependsOn: [downloadZip, downloadGregTech, downloadIC2], type: Copy) {
-    from zipTree(downloadZip.dest)
-    into file('libs')
-
-    from downloadGregTech.dest
-    into file('libs')
-
-    from downloadIC2.dest
-    into file('libs')
-}
-
 tasks.build.dependsOn sourceJar, deobfJar
-
-tasks.downloadLibs.dependsOn clearOld
-tasks.sourceMainJava.dependsOn downloadLibs
-tasks.eclipse.dependsOn downloadLibs
-tasks.idea.dependsOn downloadLibs
-
